@@ -3,13 +3,16 @@ import numpy as np
 import time
 import random
 from datetime import datetime  # ADDED
+from zoneinfo import ZoneInfo  # v2: India time
+
+IST = ZoneInfo("Asia/Kolkata")  # v2
 
 # =====================================================
 # ADDED: page setup
 # =====================================================
 st.set_page_config(page_title="ChatBot", page_icon="🤖")
-st.title("🤖 My ChatBot")
-st.caption("Type 'help' to see what I can do")
+st.title("🤖 My ChatBot v2")
+st.caption("Type 'help' to see what I can do • Now with riddles & compliments!")
 
 # =====================================================
 # ADDED: bot data
@@ -41,6 +44,24 @@ QUOTES = [
     "Don't wait for the perfect moment — start now and make it perfect.",
 ]
 
+# v2: riddles (question, answer)
+RIDDLES = [
+    ("What has keys but can't open locks?", "A keyboard ⌨️"),
+    ("What gets wetter the more it dries?", "A towel 🧺"),
+    ("What has hands but can't clap?", "A clock 🕰️"),
+    ("What can you catch but not throw?", "A cold 🤧"),
+    ("What has a head and a tail but no body?", "A coin 🪙"),
+]
+
+# v2: compliments
+COMPLIMENTS = [
+    "You're smarter than you think! 🧠",
+    "Your curiosity is awesome — keep asking questions! ✨",
+    "You make coding look easy 😎",
+    "Talking to you is the best part of my day! 😄",
+    "You've got great ideas — go build them! 🚀",
+]
+
 FALLBACK = [
     "Hmm, I didn't get that 🤔 Type 'help' to see what I can do.",
     "Sorry, I don't understand that yet. Try 'help'.",
@@ -53,6 +74,8 @@ HELP_TEXT = """**Things I can do:**
 - 📛 my name is ___ / what is my name
 - 🕒 time / 📅 date
 - 😂 joke | 🧠 fact | 💡 quote
+- 🧩 riddle → then type **answer** *(new)*
+- 🌟 compliment *(new)*
 - 🎲 random number | 🪙 toss coin | 🎯 roll dice
 - ➗ Math: 2+3*4, (10-2)/4
 - 🙏 thanks | 👋 bye"""
@@ -115,11 +138,27 @@ def get_reply(text):
     if "what is my name" in clean or "whats my name" in clean:
         return f"Your name is {name} 😊" if name else "You haven't told me yet! Say 'my name is ___'."
 
-    # time / date
+    # time / date (v2: India time, server runs on UTC)
     if "time" in words:
-        return f"🕒 Current time: **{datetime.now().strftime('%I:%M %p')}**"
+        return f"🕒 Current time (IST): **{datetime.now(IST).strftime('%I:%M %p')}**"
     if "date" in words or "day" in words:
-        return f"📅 Today is **{datetime.now().strftime('%A, %d %B %Y')}**"
+        return f"📅 Today is **{datetime.now(IST).strftime('%A, %d %B %Y')}**"
+
+    # v2: riddle
+    if any(w.startswith("riddle") for w in words):
+        question, answer = random.choice(RIDDLES)
+        st.session_state.riddle_answer = answer
+        return f"🧩 {question}\n\n*(type **answer** to see it)*"
+    if "answer" in words:
+        answer = st.session_state.get("riddle_answer", "")
+        if answer:
+            st.session_state.riddle_answer = ""
+            return f"✅ Answer: **{answer}**"
+        return "Ask me a **riddle** first! 🧩"
+
+    # v2: compliment
+    if any(w.startswith("compliment") for w in words):
+        return random.choice(COMPLIMENTS)
 
     # fun
     if any(w.startswith("joke") for w in words):
@@ -187,6 +226,7 @@ if not st.session_state.messages:
 
 with st.sidebar:
     st.header("⚙️ Options")
+    st.caption("Version 2.0")  # v2
     st.write(f"💬 Messages: {len(st.session_state.messages)}")
     if st.button("🧹 Clear Chat"):
         st.session_state.messages = []
